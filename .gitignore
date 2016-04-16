@@ -1,0 +1,5 @@
+*.pyc
+logfile_receiver.txt
+logfile_sender.txt
+sample.txt
+output.txt
