@@ -40,12 +40,12 @@ class Receiver:
 
             while True:
                 rcv_packet = Connection.receive(receiver_socket)
-                source_port, destination_port, seq_num, ack_num, data_offset, flags, receive_window, checksum, urgent_data_pointer = unpack('HHLLBBHHH', rcv_packet[:20])
-                print 'packet: ' + str(rcv_packet)
+                source_port, destination_port, seq_num, ack_num, data_offset, flags, receive_window, checksum, urgent_data_pointer = unpack('!HHLLBBHHH', rcv_packet[:20])
+                # print 'packet: ' + str(rcv_packet)
                 print 'expected_checksum: ' + str(checksum)
                 rcv_checksum = checksum
                 checksum = 0  # set this to 0 because now we need to compute the checksum on the receiver side
-                bit_header = pack( 'HHLLBBHHH', source_port, destination_port, seq_num, ack_num, data_offset, flags, receive_window, checksum, urgent_data_pointer)
+                bit_header = pack('!HHLLBBHHH', source_port, destination_port, seq_num, ack_num, data_offset, flags, receive_window, checksum, urgent_data_pointer)
                 data = rcv_packet[20:]
                 checksum = Utils.checksum(bit_header+data)
                 print 'computed checksum: ' + str(checksum)
@@ -71,6 +71,8 @@ class Receiver:
 
                         except Exception as e:
                             print 'Failed to send the ack number: ' + e.message
+
+                print ''
 
         # except Exception as e:
         #     print 'There are some errors: ' + e.message

@@ -42,10 +42,10 @@ class Packet:
         # return packet
 
         self.flags = self.fin + (self.syn << 1) + (self.rst << 2) + (self.psh << 3) + (self.ack << 4) + (self.urg << 5) + (self.reserved << 6)
-        bit_header = pack( 'HHLLBBHHH', self.source_port, self.destination_port, self.seq_num, self.ack_num, self.data_offset, self.flags, self.receive_window, self.checksum, self.urgent_data_pointer)
+        bit_header = pack( '!HHLLBBHHH', self.source_port, self.destination_port, self.seq_num, self.ack_num, self.data_offset, self.flags, self.receive_window, self.checksum, self.urgent_data_pointer)
         # print 'bit_header: ' + str(bit_header)
         self.checksum = Utils.checksum(bit_header + self.data)
-        bit_header = pack( 'HHLLBBHHH', self.source_port, self.destination_port, self.seq_num, self.ack_num, self.data_offset, self.flags, self.receive_window, self.checksum, self.urgent_data_pointer)
+        bit_header = pack( '!HHLLBBHHH', self.source_port, self.destination_port, self.seq_num, self.ack_num, self.data_offset, self.flags, self.receive_window, self.checksum, self.urgent_data_pointer)
         packet = bit_header + self.data
 
         return packet

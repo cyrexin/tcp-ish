@@ -75,7 +75,7 @@ class Sender:
                 if ready_to_read:
                     try:
                         ack_packet = Connection.receive(self.ack_socket)
-                        source_port, destination_port, seq_num, ack_num, data_offset, flags, receive_window, checksum, urgent_data_pointer = unpack('HHLLBBHHH', ack_packet[:20])
+                        source_port, destination_port, seq_num, ack_num, data_offset, flags, receive_window, checksum, urgent_data_pointer = unpack('!HHLLBBHHH', ack_packet[:20])
                         print 'ack from receiver: ' + str(ack_num)
 
                         self.send_base = ack_num
@@ -87,7 +87,10 @@ class Sender:
                     except Exception as e:
                         print 'Failed to receive ack from the receiver: ' + e.message
                 else:
+                    print ''
                     print 'Timeout!!!'
+                    print 'send base: ' + str(self.send_base)
+                    print 'next_seq_num: ' + str(self.next_seq_num)
                     self.retransmit(self.send_base, self.next_seq_num)
 
             print ''
@@ -99,10 +102,13 @@ class Sender:
         packet = packet.create_packet()
         return packet, len(data)
 
-    def transmit(self, seq_num):
+    def transmit(self, seq_num, is_retransmission=False):
         send_packet, len_of_packet = self.create_packet(seq_num)
-        self.expected_ack_num = self.next_seq_num + len_of_packet  # increase the expected sequence number
-        self.next_seq_num += len_of_packet  # increase the next sequence number
+
+        if not is_retransmission:
+            self.expected_ack_num = self.next_seq_num + len_of_packet  # increase the expected sequence number
+            self.next_seq_num += len_of_packet  # increase the next sequence number
+
         print 'len_of_packet: ' + str(len_of_packet)
         print 'expected_ack_num: ' + str(self.expected_ack_num)
         print 'next_seq_num: ' + str(self.next_seq_num)
@@ -114,8 +120,8 @@ class Sender:
 
     def retransmit(self, from_seq, to_seq):
         seq_num = from_seq
-        while seq_num <= to_seq:
-            send_packet, len_of_packet = self.transmit(seq_num)
+        while seq_num < to_seq:
+            send_packet, len_of_packet = self.transmit(seq_num, True)
             seq_num += len_of_packet
 
 
