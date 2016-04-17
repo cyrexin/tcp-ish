@@ -1,11 +1,29 @@
 from socket import *
-import json
 
 class Utils:
 
     @staticmethod
     def checksum(data):
-        return 1
+        size = len(data)
+        c_sum = 0
+        # handle odd-sized case
+        if size & 1:
+            size -= 1
+            c_sum = ord(data[size])
+        else:
+            c_sum = 0
+        # accumulate checksum
+        while size > 0:
+            size -= 2
+            c_sum += (ord(data[size + 1]) << 8) + ord(data[size])
+        # wrap overflow around
+        c_sum = (c_sum & 0xffff) + (c_sum >> 16)
+        # one's complement
+        c_sum = (~c_sum) & 0xffff
+        # swap bytes
+        c_sum = c_sum >> 8 | ((c_sum & 0xff) << 8)
+
+        return c_sum
 
 
 class Connection:
@@ -32,16 +50,13 @@ class Connection:
         try:
             data = s.recvfrom(65535)[0]
             # print data
-            data_json = json.loads(data)
-
-            return data_json
+            return data
         except:
             print "Failed to receive data."
             raise
 
     @staticmethod
     def udp_send(s, data, host, port):
-        data = json.dumps(data, ensure_ascii=False)
         s.sendto(data, (host, port))
 
 
