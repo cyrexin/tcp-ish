@@ -64,7 +64,7 @@ class RttUtils:
     def __init__(self, sample_rtt):
         self.sample_rtt = sample_rtt
         self.dev_rtt = 0
-        self.timeout_interval = 3 * sample_rtt  #TODO: a fixed value for initial experimentation
+        self.timeout_interval = 0
 
     def update(self, estimated_rtt):
         estimated_rtt = 0.875 * estimated_rtt + 0.125 * self.sample_rtt

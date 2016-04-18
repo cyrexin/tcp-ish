@@ -27,7 +27,8 @@ class Receiver:
         # self.buffer = []
 
         receiver_ip = gethostbyname(gethostname())
-        self.logger = Logger(receiver_ip, self.sender_ip, self.log_in_file)
+        self.logger_sent = Logger(receiver_ip, self.sender_ip, self.log_in_file)
+        self.logger_received = Logger(self.sender_ip, receiver_ip, self.log_in_file)
 
         self.invoke()
 
@@ -45,6 +46,12 @@ class Receiver:
                 rcv_packet = Connection.receive(receiver_socket)
                 source_port, destination_port, seq_num, ack_num, data_offset, flags, receive_window, checksum, urgent_data_pointer = unpack('!HHLLBBHHH', rcv_packet[:20])
                 # print 'packet: ' + str(rcv_packet)
+                self.logger_received.set_seq_num(ack_num)
+                self.logger_received.set_ack_num(0)
+                self.logger_received.set_fin(flags)
+                self.logger_received.log(self.log_filename)
+
+
                 print 'expected_checksum: ' + str(checksum)
                 rcv_checksum = checksum
                 checksum = 0  # set this to 0 because now we need to compute the checksum on the receiver side
@@ -68,10 +75,10 @@ class Receiver:
 
                         try:
                             # update the log
-                            self.logger.set_seq_num(self.my_seq_num)
-                            self.logger.set_ack_num(self.exp_seq_num)
-                            self.logger.set_fin(flags)
-                            self.logger.log(self.log_filename)
+                            self.logger_sent.set_seq_num(0)
+                            self.logger_sent.set_ack_num(self.my_seq_num)
+                            self.logger_sent.set_fin(flags)
+                            self.logger_sent.log(self.log_filename)
 
                             Connection.udp_send(ack_socket, ack_packet, self.sender_ip, self.sender_port)
 

@@ -1,4 +1,4 @@
-import time
+import datetime
 
 class Logger:
     def __init__(self, source, destination, log_in_file, log_rtt=False):
@@ -20,7 +20,7 @@ class Logger:
         self.fin = fin
 
     def log(self, file_name=None):
-        timestamp = time.time()
+        timestamp = datetime.datetime.now()
         line = str(timestamp) + ' ' + self.source + ' ' + self.destination + ' ' + str(self.seq_num) + ' ' + str(self.ack_num) + ' ' + str(self.fin)
         if self.log_rtt:
             line += ' ' + str(self.rtt)
