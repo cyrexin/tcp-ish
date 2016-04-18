@@ -44,26 +44,19 @@ class Receiver:
 
             while True:
                 rcv_packet = Connection.receive(receiver_socket)
-                source_port, destination_port, seq_num, ack_num, data_offset, flags, receive_window, checksum, urgent_data_pointer = unpack('!HHLLBBHHH', rcv_packet[:20])
-                # print 'packet: ' + str(rcv_packet)
+                source_port, destination_port, seq_num, ack_num, data_offset, flags, receive_window, checksum, urgent_data_pointer = Packet.get_header(rcv_packet)
+                data = Packet.get_data(rcv_packet)
+
                 self.logger_received.set_seq_num(ack_num)
                 self.logger_received.set_ack_num(0)
                 self.logger_received.set_fin(flags)
                 self.logger_received.log(self.log_filename)
 
-
-                print 'expected_checksum: ' + str(checksum)
-                rcv_checksum = checksum
-                checksum = 0  # set this to 0 because now we need to compute the checksum on the receiver side
-                bit_header = pack('!HHLLBBHHH', source_port, destination_port, seq_num, ack_num, data_offset, flags, receive_window, checksum, urgent_data_pointer)
-                data = rcv_packet[20:]
-                checksum = Utils.checksum(bit_header+data)
-                print 'computed checksum: ' + str(checksum)
                 print 'exp_seq_num: ' + str(self.exp_seq_num)
                 print 'packet.seq_num: ' + str(seq_num)
                 print 'fin: ' + str(flags)
 
-                if checksum != rcv_checksum:  # drop the packet and send nothing back to the sender
+                if not Packet.verify_checksum(rcv_packet):  # drop the packet and send nothing back to the sender
                     print "Failed to match the checksum. This packet will be dropped."
                 else:
                     if self.exp_seq_num == seq_num:

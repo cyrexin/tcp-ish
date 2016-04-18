@@ -49,3 +49,26 @@ class Packet:
         packet = bit_header + self.data
 
         return packet
+
+    @staticmethod
+    def get_header(packet):
+        source_port, destination_port, seq_num, ack_num, data_offset, flags, receive_window, checksum, urgent_data_pointer = unpack('!HHLLBBHHH', packet[:20])
+
+        return source_port, destination_port, seq_num, ack_num, data_offset, flags, receive_window, checksum, urgent_data_pointer
+
+    @staticmethod
+    def get_data(packet):
+        return packet[20:]
+
+    @staticmethod
+    def verify_checksum(packet):
+        source_port, destination_port, seq_num, ack_num, data_offset, flags, receive_window, checksum, urgent_data_pointer = Packet.get_header(packet)
+        print 'expected_checksum: ' + str(checksum)
+        rcv_checksum = checksum
+        checksum = 0  # set this to 0 because now we need to compute the checksum on the receiver side
+        bit_header = pack('!HHLLBBHHH', source_port, destination_port, seq_num, ack_num, data_offset, flags, receive_window, checksum, urgent_data_pointer)
+        data = Packet.get_data(packet)
+        checksum = Utils.checksum(bit_header+data)
+        print 'computed checksum: ' + str(checksum)
+
+        return checksum == rcv_checksum

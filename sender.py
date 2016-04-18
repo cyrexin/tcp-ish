@@ -90,7 +90,7 @@ class Sender:
                 if ready_to_read:
                     try:
                         ack_packet = Connection.receive(self.ack_socket)
-                        source_port, destination_port, seq_num, ack_num, data_offset, flags, receive_window, checksum, urgent_data_pointer = unpack('!HHLLBBHHH', ack_packet[:20])
+                        source_port, destination_port, seq_num, ack_num, data_offset, flags, receive_window, checksum, urgent_data_pointer = Packet.get_header(ack_packet)
                         print 'ack from receiver: ' + str(ack_num)
 
                         if not self.retransmission_occurred:
