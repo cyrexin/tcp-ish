@@ -23,9 +23,12 @@ class Receiver:
             self.log_in_file = False
 
         self.exp_seq_num = 0
-        self.buffer = []
+        self.my_seq_num = 0  # the sequence number of the receiver
+        # self.buffer = []
 
-        self.logger = Logger(self.sender_port, self.listening_port, self.log_in_file)
+        receiver_ip = gethostbyname(gethostname())
+        self.logger = Logger(receiver_ip, self.sender_ip, self.log_in_file)
+
         self.invoke()
 
     def invoke(self):
@@ -49,21 +52,31 @@ class Receiver:
                 data = rcv_packet[20:]
                 checksum = Utils.checksum(bit_header+data)
                 print 'computed checksum: ' + str(checksum)
+                print 'exp_seq_num: ' + str(self.exp_seq_num)
+                print 'packet.seq_num: ' + str(seq_num)
+                print 'fin: ' + str(flags)
 
                 if checksum != rcv_checksum:  # drop the packet and send nothing back to the sender
-                    print "Failed to match the checksum"
+                    print "Failed to match the checksum. This packet will be dropped."
                 else:
-                    print 'exp_seq_num: ' + str(self.exp_seq_num)
-                    print 'packet.seq_num: ' + str(seq_num)
                     if self.exp_seq_num == seq_num:
                         self.filename.write(data)
-                        self.exp_seq_num += len(data)
+                        self.exp_seq_num += len(data)  # after successfully receive a packet, update the expected sequence number for the next one
 
-                        ack_packet = Packet(self.listening_port, self.sender_port, 0, '0', flags, self.exp_seq_num)
+                        ack_packet = Packet(self.listening_port, self.sender_port, self.my_seq_num, '0', flags, self.exp_seq_num)
                         ack_packet = ack_packet.create_packet()
 
                         try:
+                            # update the log
+                            self.logger.set_seq_num(self.my_seq_num)
+                            self.logger.set_ack_num(self.exp_seq_num)
+                            self.logger.set_fin(flags)
+                            self.logger.log(self.log_filename)
+
                             Connection.udp_send(ack_socket, ack_packet, self.sender_ip, self.sender_port)
+
+                            self.my_seq_num += 1  # update the receiver sequence number after the ack packet is sent
+
                             if flags == 1:
                                 print "All the packets have been received successfully!"
                                 self.filename.close()
@@ -71,6 +84,9 @@ class Receiver:
 
                         except Exception as e:
                             print 'Failed to send the ack number: ' + e.message
+                    else:
+                        print 'Not the expected sequence number. This packet will be dropped.'
+
 
                 print ''
 

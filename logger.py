@@ -16,11 +16,16 @@ class Logger:
     def set_rtt(self, rtt):
         self.rtt = rtt
 
+    def set_fin(self, fin):
+        self.fin = fin
+
     def log(self, file_name=None):
         timestamp = time.time()
-        line = str(timestamp) + ' ' + self.source + ' ' + self.destination + ' ' + str(self.seq_num) + ' ' + str(self.ack_num)  #TODO: flags
+        line = str(timestamp) + ' ' + self.source + ' ' + self.destination + ' ' + str(self.seq_num) + ' ' + str(self.ack_num) + ' ' + str(self.fin)
         if self.log_rtt:
             line += ' ' + str(self.rtt)
 
         if self.log_in_file:
-            file_name.writeln(line)
+            file_name.write(line + '\n')
+        else:
+            print(line)

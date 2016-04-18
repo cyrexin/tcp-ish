@@ -52,7 +52,7 @@ class Connection:
             # print data
             return data
         except:
-            print "Failed to receive data."
+            print 'Failed to receive data.'
             raise
 
     @staticmethod
@@ -71,3 +71,26 @@ class RttUtils:
         self.dev_rtt = 0.75 * self.dev_rtt + 0.25 * abs(self.sample_rtt - estimated_rtt)
         self.timeout_interval = estimated_rtt + 4 * self.dev_rtt
         return self.timeout_interval, estimated_rtt
+
+
+class SenderOutput:
+    def __init__(self):
+        self.total_bytes_sent = 0
+        self.segments_sent = 0
+        self.segments_retransmitted = 0
+
+    def update_total_bytes_sent(self, length):
+        self.total_bytes_sent += length
+
+    def update_number_of_segments_sent(self):  # should include the number of retransmission
+        self.segments_sent += 1
+
+    def update_segments_retransmitted(self):
+        self.segments_retransmitted += 1
+
+    def write(self):
+        print 'Delivery completed successfully.'
+        print 'Total bytes sent = %s' % str(self.total_bytes_sent)
+        print 'Segments sent = %s' % str(self.segments_sent)
+        print 'Segments retransmitted = %s' % "{0:.0f}%".format(float(self.segments_retransmitted) / self.segments_sent * 100)
+

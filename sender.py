@@ -5,6 +5,7 @@ import time
 import select
 from utils import *
 from packet import *
+from logger import *
 
 
 class Sender:
@@ -31,16 +32,19 @@ class Sender:
             self.next_seq_num = 0
             self.expected_ack_num = 0
             self.send_base = self.next_seq_num
-
+            self.last_successfully_received_packet_num = 0
 
             self.sender_socket = Connection.create_udp_socket()
 
-            # sender_ip = gethostbyname(gethostname())
+            sender_ip = gethostbyname(gethostname())
             self.ack_socket = Connection.create_udp_socket()
             Connection.udp_bind(self.ack_socket, '', self.ack_port_num)
 
             self.file_size = os.stat(filename).st_size
             self.num_packets = math.ceil(float(self.file_size) / self.mss)
+
+            self.logger = Logger(sender_ip, self.remote_ip, self.log_in_file, True)
+            self.sender_output = SenderOutput()
 
             self.reliable_send()
         # except Exception as e:
@@ -48,7 +52,7 @@ class Sender:
         #     sys.exit(1)
 
     def reliable_send(self):
-        num_packets = 0
+        packet_num = 0
         print 'self.next_seq_num: ' + str(self.next_seq_num)
         print 'self.file_size: ' + str(self.file_size)
         print 'self.num_packets: ' + str(self.num_packets)
@@ -56,13 +60,17 @@ class Sender:
 
         while self.next_seq_num < self.file_size:  #TODO: <= or < ?
             for i in range(0, self.window_size):  # back to back send packets
-                num_packets += 1
-                print 'num_packets: ' + str(num_packets)
-                print 'sequence number: ' + str(self.next_seq_num)
-                if num_packets == self.num_packets:  # the last packet
-                    self.fin = 1
+                if (self.next_seq_num >= self.file_size):
+                    pass
+                else:
+                    print 'sequence number: ' + str(self.next_seq_num)
 
-                self.transmit(self.next_seq_num)
+                    # if num_packets == self.num_packets:  # the last packet
+                    #     self.fin = 1
+
+                    self.transmit(self.next_seq_num, packet_num)
+
+                    packet_num += 1
 
             while True:
                 ready_to_read, ready_to_write, in_error = \
@@ -79,10 +87,16 @@ class Sender:
                         print 'ack from receiver: ' + str(ack_num)
 
                         self.send_base = ack_num
+                        self.last_successfully_received_packet_num = seq_num
                         if ack_num == self.expected_ack_num:
                             # self.next_seq_num = ack_num
                             # sample_rtt = time.time() - send_time
                             print 'All the packets from the window have been received correctly!'
+
+                            if flags == 1:  # the receiver has received all the packets
+                                print ''
+                                self.sender_output.write()
+
                             break
                     except Exception as e:
                         print 'Failed to receive ack from the receiver: ' + e.message
@@ -90,39 +104,66 @@ class Sender:
                     print ''
                     print 'Timeout!!!'
                     print 'send base: ' + str(self.send_base)
+                    print 'last successfully received packet number: ' + str(self.last_successfully_received_packet_num)
                     print 'next_seq_num: ' + str(self.next_seq_num)
                     self.retransmit(self.send_base, self.next_seq_num)
 
             print ''
 
-    def create_packet(self, seq_num):
+    def create_packet(self, seq_num, packet_num):
         self.filename.seek(seq_num)
         data = self.filename.read(self.mss)
-        packet = Packet(self.ack_port_num, self.remote_port, seq_num, data, self.fin)
+
+        if seq_num + len(data) == self.file_size:
+            self.fin = 1
+        else:
+            self.fin = 0
+
+        packet = Packet(self.ack_port_num, self.remote_port, seq_num, data, self.fin, packet_num)
         packet = packet.create_packet()
         return packet, len(data)
 
-    def transmit(self, seq_num, is_retransmission=False):
-        send_packet, len_of_packet = self.create_packet(seq_num)
+    def transmit(self, seq_num, packet_num, is_retransmission=False):
+        print 'packet_num: ' + str(packet_num)
+
+        send_packet, len_of_packet = self.create_packet(seq_num, packet_num)
+
+        send_time = time.time()
 
         if not is_retransmission:
             self.expected_ack_num = self.next_seq_num + len_of_packet  # increase the expected sequence number
             self.next_seq_num += len_of_packet  # increase the next sequence number
 
+        # making log
+        self.logger.set_seq_num(seq_num)
+        self.logger.set_ack_num(packet_num)
+        self.logger.set_rtt(send_time)
+        self.logger.set_fin(self.fin)
+        self.logger.log(self.log_filename)
+
         print 'len_of_packet: ' + str(len_of_packet)
         print 'expected_ack_num: ' + str(self.expected_ack_num)
-        print 'next_seq_num: ' + str(self.next_seq_num)
+        print 'seq_num: ' + str(seq_num)
         # print 'packet:' + str(send_packet)
-        send_time = time.time()
+
         Connection.udp_send(self.sender_socket, send_packet, self.remote_ip, self.remote_port)
+
+        # update the stats
+        self.sender_output.update_number_of_segments_sent()
+        self.sender_output.update_total_bytes_sent(len(send_packet))
 
         return send_packet, len_of_packet
 
     def retransmit(self, from_seq, to_seq):
         seq_num = from_seq
+        resent_packet_num = self.last_successfully_received_packet_num + 1
         while seq_num < to_seq:
-            send_packet, len_of_packet = self.transmit(seq_num, True)
+            send_packet, len_of_packet = self.transmit(seq_num, resent_packet_num, True)
+
+            self.sender_output.update_segments_retransmitted()
+
             seq_num += len_of_packet
+            resent_packet_num += 1
 
 
 def main():
