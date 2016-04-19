@@ -34,18 +34,18 @@ class Sender:
             self.send_base = self.next_seq_num
             self.last_successfully_received_packet_num = 0
 
-            self.sender_socket = Connection.create_udp_socket()
+            self.sender_socket = Connection.create_udp_socket(Connection.is_valid_ipv6_address(self.remote_ip))
 
             sender_ip = gethostbyname(gethostname())
-            self.ack_socket = Connection.create_udp_socket()
+            self.ack_socket = Connection.create_udp_socket(Connection.is_valid_ipv6_address(self.remote_ip))
             Connection.udp_bind(self.ack_socket, '', self.ack_port_num)
 
             self.file_size = os.stat(filename).st_size
             self.num_packets = math.ceil(float(self.file_size) / self.mss)
 
             self.rtt = {}
-            self.estimated_rtt = 1
-            self.timeout_interval = 1.5
+            self.estimated_rtt = 1.5
+            self.timeout_interval = 1.8
             self.retransmission_occurred = False
 
             self.logger_sent = Logger(sender_ip, self.remote_ip, self.log_in_file, True)
@@ -96,7 +96,7 @@ class Sender:
                         if not self.retransmission_occurred:
                             sample_rtt = (datetime.datetime.now() - self.rtt[seq_num]).total_seconds()
                             print 'sample_rtt: ' + str(sample_rtt)
-                            if self.estimated_rtt == 1:
+                            if self.estimated_rtt == 1.5:
                                 self.estimated_rtt = sample_rtt
                             rtt_utils = RttUtils(sample_rtt)
                             self.timeout_interval, self.estimated_rtt = rtt_utils.update(self.estimated_rtt)
@@ -105,7 +105,7 @@ class Sender:
 
                         # log ACK packet
                         self.logger_received.set_seq_num(0)  # for received packets, the seq_num should be 0
-                        self.logger_received.set_ack_num(seq_num)  # the ack_num should be in terms of the number of packet
+                        self.logger_received.set_ack_num(seq_num+1)  # the ack_num should be in terms of the number of packet
                         # self.logger.set_rtt(send_time)
                         self.logger_received.set_fin(flags)
                         self.logger_received.log(self.log_filename)

@@ -27,11 +27,21 @@ class Utils:
 
 
 class Connection:
+    @staticmethod
+    def is_valid_ipv6_address(address):
+        try:
+            inet_pton(AF_INET6, address)
+        except error:  # not a valid address
+            return False
+        return True
 
     @staticmethod
-    def create_udp_socket():
+    def create_udp_socket(is_ipv6=False):
         try:
-            s = socket(AF_INET, SOCK_DGRAM)
+            if not is_ipv6:
+                s = socket(AF_INET, SOCK_DGRAM)
+            else:
+                s = socket(AF_INET6, SOCK_DGRAM)
             return s
         except Exception as e:
             print 'Failed to create the UDP connection: ' + e.message

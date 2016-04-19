@@ -35,10 +35,10 @@ class Receiver:
     def invoke(self):
         # try:
             receiver_ip = gethostbyname(gethostname())
-            receiver_socket = Connection.create_udp_socket()
+            receiver_socket = Connection.create_udp_socket(Connection.is_valid_ipv6_address(self.sender_ip))
             Connection.udp_bind(receiver_socket, '', self.listening_port)
 
-            ack_socket = Connection.create_udp_socket()
+            ack_socket = Connection.create_udp_socket(Connection.is_valid_ipv6_address(self.sender_ip))
 
             print 'Receiver has started on ' + receiver_ip + '...'
 
@@ -67,15 +67,15 @@ class Receiver:
                         ack_packet = ack_packet.create_packet()
 
                         try:
+                            Connection.udp_send(ack_socket, ack_packet, self.sender_ip, self.sender_port)
+
+                            self.my_seq_num += 1  # update the receiver sequence number after the ack packet is sent
+
                             # update the log
                             self.logger_sent.set_seq_num(0)
                             self.logger_sent.set_ack_num(self.my_seq_num)
                             self.logger_sent.set_fin(flags)
                             self.logger_sent.log(self.log_filename)
-
-                            Connection.udp_send(ack_socket, ack_packet, self.sender_ip, self.sender_port)
-
-                            self.my_seq_num += 1  # update the receiver sequence number after the ack packet is sent
 
                             if flags == 1:
                                 print "All the packets have been received successfully!"
