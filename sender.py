@@ -10,49 +10,53 @@ from logger import *
 
 class Sender:
     def __init__(self, filename, remote_ip, remote_port, ack_port_num, log_filename, window_size=1):
-        # try:
+        try:
             self.filename = open(filename, 'rb')
-            self.remote_ip = remote_ip
-            self.remote_port = remote_port
-            self.ack_port_num = ack_port_num
-            self.window_size = window_size
-            if log_filename != 'stdout':
-                try:
-                    self.log_filename = open(log_filename, 'w+')
-                except Exception as e:
-                    print "unable to create file: " + e.message
-                    sys.exit(1)
-                self.log_in_file = True
-            else:
-                self.log_filename = None
-                self.log_in_file = False
+        except Exception as e:
+            print 'The input file does not exist! Please specify a correct input file.'
+            sys.exit(1)
 
-            self.mss = 576  # set the maximum segment size as 576 bytes
-            self.fin = 0
-            self.next_seq_num = 0
-            self.expected_ack_num = 0
-            self.send_base = self.next_seq_num
-            self.last_successfully_received_packet_num = 0
+        self.remote_ip = remote_ip
+        self.remote_port = remote_port
+        self.ack_port_num = ack_port_num
+        self.window_size = window_size
+        if log_filename != 'stdout':
+            try:
+                self.log_filename = open(log_filename, 'w+')
+            except Exception as e:
+                print "unable to create file: " + e.message
+                sys.exit(1)
+            self.log_in_file = True
+        else:
+            self.log_filename = None
+            self.log_in_file = False
 
-            self.sender_socket = Connection.create_udp_socket(Connection.is_valid_ipv6_address(self.remote_ip))
+        self.mss = 576  # set the maximum segment size as 576 bytes
+        self.fin = 0
+        self.next_seq_num = 0
+        self.expected_ack_num = 0
+        self.send_base = self.next_seq_num
+        self.last_successfully_received_packet_num = -1
 
-            sender_ip = gethostbyname(gethostname())
-            self.ack_socket = Connection.create_udp_socket(Connection.is_valid_ipv6_address(self.remote_ip))
-            Connection.udp_bind(self.ack_socket, '', self.ack_port_num)
+        self.sender_socket = Connection.create_udp_socket(Connection.is_valid_ipv6_address(self.remote_ip))
 
-            self.file_size = os.stat(filename).st_size
-            self.num_packets = math.ceil(float(self.file_size) / self.mss)
+        sender_ip = gethostbyname(gethostname())
+        self.ack_socket = Connection.create_udp_socket(Connection.is_valid_ipv6_address(self.remote_ip))
+        Connection.udp_bind(self.ack_socket, '', self.ack_port_num)
 
-            self.rtt = {}
-            self.estimated_rtt = 1.5
-            self.timeout_interval = 1.8
-            self.retransmission_occurred = False
+        self.file_size = os.stat(filename).st_size
+        self.num_packets = math.ceil(float(self.file_size) / self.mss)
 
-            self.logger_sent = Logger(sender_ip, self.remote_ip, self.log_in_file, True)
-            self.logger_received = Logger(self.remote_ip, sender_ip, self.log_in_file)
-            self.sender_output = SenderOutput()
+        self.rtt = {}
+        self.estimated_rtt = 1.5
+        self.timeout_interval = 1.8
+        self.retransmission_occurred = False
 
-            self.reliable_data_transfer()
+        self.logger_sent = Logger(sender_ip, self.remote_ip, self.log_in_file, True)
+        self.logger_received = Logger(self.remote_ip, sender_ip, self.log_in_file)
+        self.sender_output = SenderOutput()
+
+        self.reliable_data_transfer()
 
         # except Exception as e:
         #     print "Failed to initiate sender: " + e.message
@@ -110,8 +114,9 @@ class Sender:
                         self.logger_received.set_fin(flags)
                         self.logger_received.log(self.log_filename)
 
-                        self.send_base = ack_num
-                        self.last_successfully_received_packet_num = seq_num
+                        if ack_num > self.send_base:
+                            self.send_base = ack_num
+                            self.last_successfully_received_packet_num = seq_num
                         if ack_num == self.expected_ack_num:
                             # self.next_seq_num = ack_num
                             # sample_rtt = time.time() - send_time

@@ -3,7 +3,7 @@ from socket import *
 class Utils:
 
     @staticmethod
-    def checksum(data):
+    def checksum(data):  # ref: http://locklessinc.com/articles/tcp_checksum/
         size = len(data)
         c_sum = 0
         # handle odd-sized case
@@ -99,7 +99,7 @@ class SenderOutput:
         self.segments_retransmitted += 1
 
     def write(self):
-        print 'Delivery completed successfully.'
+        print 'Delivery completed successfully!'
         print 'Total bytes sent = %s' % str(self.total_bytes_sent)
         print 'Segments sent = %s' % str(self.segments_sent)
         print 'Segments retransmitted = %s' % "{0:.0f}%".format(float(self.segments_retransmitted) / self.segments_sent * 100)

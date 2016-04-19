@@ -78,7 +78,8 @@ class Receiver:
                             self.logger_sent.log(self.log_filename)
 
                             if flags == 1:
-                                print "All the packets have been received successfully!"
+                                print ''
+                                print 'Delivery completed successfully!'
                                 self.filename.close()
                                 sys.exit()
 
