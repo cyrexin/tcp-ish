@@ -53,5 +53,7 @@ It has the following situations:
 - Although the assignment assumes that the transmission from the receiver to the sender is reliable, the implementation of this program can actually handle the loss or out-of-order ACKs. Since the implementation support cumulative ACK, the loss of the in-between ACKs does not matter. For the other loss of ACK, after timeout, the sender will assume that the corresponding packets are not received by the receiver and will resend them. The send base of the sender only updates when the received ACK number is larger than that, which will handle the out-of-order situation. 
 
 
-### Test files
-It include one short and one long text files, as well as two image files.
+### Test and output files
+- It include one short and one long text files (test.txt and test2.txt), as well as two image files (test.jpg and test2.jpg) for testing input.
+- The log files log_receiver.txt and log_sender.txt are from the receiver and sender respectively for one run of transferring the test2.jpg.
+- The output.jpg
