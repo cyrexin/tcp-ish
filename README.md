@@ -56,4 +56,4 @@ It has the following situations:
 ### Test and output files
 - It include one short and one long text files (test.txt and test2.txt), as well as two image files (test.jpg and test2.jpg) for testing input.
 - The log files log_receiver.txt and log_sender.txt are from the receiver and sender respectively for one run of transferring the test2.jpg.
-- The output.jpg
+- The output.jpg is the output file from the run mentioned above.
