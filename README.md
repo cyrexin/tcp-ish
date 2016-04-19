@@ -53,3 +53,7 @@ It has the following situations:
 ### Additional features
 - The timeout interval is calculated as the way in the textbook. Details can be found in the RttUtils class in utils.py. It will never computes the SampleRTT for a segment that has been retransmitted. The starting EstimatedRTT and TimeoutInterval is set to 1.5 seconds and 1.8 seconds respectively, based on the observation that these numbers are way larger than the actual RTT so that unnecessary retransmission will not occur at the first place.
 - Although the assignment assumes that the transmission from the receiver to the sender is reliable, the implementation of this program can actually handle the loss or out-of-order ACKs. Since the implementation support cumulative ACK, the loss of the in-between ACKs does not matter. For the other loss of ACK, after timeout, the sender will assume that the corresponding packets are not received by the receiver and will resend them. The send base of the sender only updates when the received ACK number is larger than that, which will handle the out-of-order situation. 
+
+
+### Test files
+It include one short and one long text files, as well as two image files.
